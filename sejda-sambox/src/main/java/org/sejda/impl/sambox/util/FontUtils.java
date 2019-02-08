@@ -20,8 +20,8 @@ package org.sejda.impl.sambox.util;
 
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static org.sejda.sambox.util.BidiUtils.visualToLogical;
 import static org.sejda.util.RequireUtils.requireNotNullArg;
-
 import java.awt.geom.GeneralPath;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.fontbox.ttf.TrueTypeFont;
@@ -61,10 +60,28 @@ public final class FontUtils {
     private static final Logger LOG = LoggerFactory.getLogger(FontUtils.class);
 
     private FontUtils() {
-        // hide
     }
 
     private static final Map<StandardType1Font, PDType1Font> STANDARD_TYPE1_FONTS;
+
+    static {
+        Map<StandardType1Font, PDType1Font> fontsCache = new EnumMap<>(StandardType1Font.class);
+        fontsCache.put(StandardType1Font.CURIER, PDType1Font.COURIER);
+        fontsCache.put(StandardType1Font.CURIER_BOLD, PDType1Font.COURIER_BOLD);
+        fontsCache.put(StandardType1Font.CURIER_BOLD_OBLIQUE, PDType1Font.COURIER_BOLD_OBLIQUE);
+        fontsCache.put(StandardType1Font.CURIER_OBLIQUE, PDType1Font.COURIER_OBLIQUE);
+        fontsCache.put(StandardType1Font.HELVETICA, PDType1Font.HELVETICA);
+        fontsCache.put(StandardType1Font.HELVETICA_BOLD, PDType1Font.HELVETICA_BOLD);
+        fontsCache.put(StandardType1Font.HELVETICA_BOLD_OBLIQUE, PDType1Font.HELVETICA_BOLD_OBLIQUE);
+        fontsCache.put(StandardType1Font.HELVETICA_OBLIQUE, PDType1Font.HELVETICA_OBLIQUE);
+        fontsCache.put(StandardType1Font.SYMBOL, PDType1Font.SYMBOL);
+        fontsCache.put(StandardType1Font.ZAPFDINGBATS, PDType1Font.ZAPF_DINGBATS);
+        fontsCache.put(StandardType1Font.TIMES_BOLD, PDType1Font.TIMES_BOLD);
+        fontsCache.put(StandardType1Font.TIMES_BOLD_ITALIC, PDType1Font.TIMES_BOLD_ITALIC);
+        fontsCache.put(StandardType1Font.TIMES_ITALIC, PDType1Font.TIMES_ITALIC);
+        fontsCache.put(StandardType1Font.TIMES_ROMAN, PDType1Font.TIMES_ROMAN);
+        STANDARD_TYPE1_FONTS = Collections.unmodifiableMap(fontsCache);
+    }
 
     static {
         Map<StandardType1Font, PDType1Font> fontsCache = new EnumMap<>(StandardType1Font.class);
@@ -104,7 +121,7 @@ public final class FontUtils {
         if (!canDisplay(text, font)) {
             PDFont fallback = findFontFor(document, text);
             String fallbackName = fallback == null ? null : fallback.getName();
-            LOG.debug("Text '{}' cannot be written with font {}, using fallback {}", text, font.getName(), fallbackName);
+            LOG.debug("Text \'{}\' cannot be written with font {}, using fallback {}", text, font.getName(), fallbackName);
             return fallback;
         }
         return font;
@@ -127,12 +144,10 @@ public final class FontUtils {
         if (!loadedFontCache.containsKey(document)) {
             loadedFontCache.put(document, new HashMap<>());
         }
-
         Map<String, PDFont> docCache = loadedFontCache.get(document);
         if (docCache.containsKey(font.getResource())) {
             return docCache.get(font.getResource());
         }
-
         InputStream in = font.getFontStream();
         try {
             PDType0Font loaded = PDType0Font.load(document, in);
@@ -155,7 +170,6 @@ public final class FontUtils {
      */
     public static final PDFont findFontFor(PDDocument document, String text) {
         try {
-            // lets make sure the jar is in the classpath
             Class.forName("org.sejda.fonts.UnicodeType0Font");
             PDFont found = findFontAmong(document, text, UnicodeType0Font.values());
             if (nonNull(found)) {
@@ -163,7 +177,6 @@ public final class FontUtils {
             }
             Class.forName("org.sejda.fonts.OptionalUnicodeType0Font");
             return findFontAmong(document, text, OptionalUnicodeType0Font.values());
-
         } catch (ClassNotFoundException clf) {
             LOG.warn("Fallback fonts not available");
         }
@@ -174,7 +187,7 @@ public final class FontUtils {
         for (FontResource font : fonts) {
             PDFont loaded = loadFont(document, font);
             if (canDisplay(text, loaded)) {
-                LOG.debug("Found suitable font {} to display '{}'", loaded, text);
+                LOG.debug("Found suitable font {} to display \'{}\'", loaded, text);
                 return loaded;
             }
         }
@@ -205,8 +218,7 @@ public final class FontUtils {
         try {
             font.encode(" ");
             return true;
-        } catch (IllegalArgumentException | IOException | UnsupportedOperationException | NullPointerException e) {
-            // Nope
+        } catch (IllegalArgumentExceptionIOException | UnsupportedOperationException | NullPointerException |  e) {
         }
         return false;
     }
@@ -215,37 +227,24 @@ public final class FontUtils {
      * Returns true if the given font can display the given text. IMPORTANT: Ignores all whitespace in text.
      */
     public static boolean canDisplay(String text, PDFont font) {
-        if (font == null)
+        if (font == null) {
             return false;
-
-        // LOG.debug("Can display '{}' using {}?", text, font);
-
+        }
         try {
-            // remove all whitespace characters and check only if those can be written using the font
             byte[] encoded = font.encode(removeWhitespace(text));
-
             if (font instanceof PDVectorFont) {
                 InputStream in = new ByteArrayInputStream(encoded);
                 while (in.available() > 0) {
                     int code = font.readCode(in);
-
-                    // LOG.debug("Read codePoint {}", code);
-
                     PDVectorFont vectorFont = (PDVectorFont) font;
                     GeneralPath path = vectorFont.getPath(code);
-                    // if(path != null) {
-                    // LOG.debug("GeneralPath is {} for '{}' (code = {}, font = {})", path.getBounds2D(), new String(Character.toChars(code)), code, font.getName());
-                    // }
-
                     if (path == null || path.getBounds2D().getWidth() == 0) {
                         return false;
                     }
                 }
             }
-
             return true;
-        } catch (IllegalArgumentException | IOException | UnsupportedOperationException | NullPointerException e) {
-            // LOG.debug("Cannot display text with font", e);
+        } catch (IllegalArgumentExceptionIOException | UnsupportedOperationException | NullPointerException |  e) {
         }
         return false;
     }
@@ -258,17 +257,18 @@ public final class FontUtils {
             while (in.available() > 0) {
                 int code = font.readCode(in);
                 if (font instanceof PDType3Font) {
-                    maxHeight = Math.max(maxHeight,
-                            ofNullable(((PDType3Font) font).getCharProc(code)).map(PDType3CharProc::getGlyphBBox)
-                                    .map(PDRectangle::toGeneralPath).map(p -> p.getBounds2D().getHeight()).orElse(0d));
-                } else if (font instanceof PDVectorFont) {
-                    maxHeight = Math.max(maxHeight, ofNullable(((PDVectorFont) font).getPath(code))
-                            .map(p -> p.getBounds2D().getHeight()).orElse(0d));
-                } else if (font instanceof PDSimpleFont) {
-                    PDSimpleFont simpleFont = (PDSimpleFont) font;
-                    String name = ofNullable(simpleFont.getEncoding()).map(e -> e.getName(code)).orElse(null);
-                    if (nonNull(name)) {
-                        maxHeight = Math.max(maxHeight, simpleFont.getPath(name).getBounds2D().getHeight());
+                    maxHeight = Math.max(maxHeight, ofNullable(((PDType3Font) font).getCharProc(code)).map(PDType3CharProc::getGlyphBBox).map(PDRectangle::toGeneralPath).map(( p) -> p.getBounds2D().getHeight()).orElse(0d));
+                } else {
+                    if (font instanceof PDVectorFont) {
+                        maxHeight = Math.max(maxHeight, ofNullable(((PDVectorFont) font).getPath(code)).map(( p) -> p.getBounds2D().getHeight()).orElse(0d));
+                    } else {
+                        if (font instanceof PDSimpleFont) {
+                            PDSimpleFont simpleFont = (PDSimpleFont) font;
+                            String name = ofNullable(simpleFont.getEncoding()).map(( e) -> e.getName(code)).orElse(null);
+                            if (nonNull(name)) {
+                                maxHeight = Math.max(maxHeight, simpleFont.getPath(name).getBounds2D().getHeight());
+                            }
+                        }
                     }
                 }
             }
@@ -293,17 +293,17 @@ public final class FontUtils {
      * loading a fallback font.
      */
     public static class FontSubsetting {
+
         public final String fontName;
+
         public final boolean isSubset;
+
         public final PDFont subsetFont;
 
         public FontSubsetting(PDFont subsetFont) {
             this.subsetFont = subsetFont;
-
-            // is it a subset font? ABCDEF+Verdana
             String fontName = StringUtils.trimToEmpty(subsetFont.getName());
             String[] fontNameFragments = fontName.split("\\+");
-
             if (fontNameFragments.length == 2 && fontNameFragments[0].length() == 6) {
                 this.isSubset = true;
                 this.fontName = fontNameFragments[1];
@@ -327,13 +327,10 @@ public final class FontUtils {
          */
         public PDFont loadOriginal(PDDocument document) {
             String lookupName = fontName.replace("-", " ");
-
-            LOG.debug("Searching the system for a font matching name '{}'", lookupName);
-
+            LOG.debug("Searching the system for a font matching name \'{}\'", lookupName);
             FontMapping<TrueTypeFont> fontMapping = FontMappers.instance().getTrueTypeFont(lookupName, null);
             if (fontMapping != null && fontMapping.getFont() != null && !fontMapping.isFallback()) {
                 TrueTypeFont mappedFont = fontMapping.getFont();
-
                 try {
                     LOG.debug("Original font available on the system: {}", fontName);
                     return PDType0Font.load(document, mappedFont.getOriginalData());
@@ -346,7 +343,6 @@ public final class FontUtils {
                     }
                 }
             }
-
             return null;
         }
 
@@ -355,28 +351,20 @@ public final class FontUtils {
          */
         public PDFont loadSimilar(PDDocument document) {
             String lookupName = fontName.replace("-", " ");
-
-            // Eg: Arial-BoldMT
             PDFontDescriptor descriptor = new PDFontDescriptor(new COSDictionary());
             descriptor.setFontName(fontName.split("-")[0]);
             descriptor.setForceBold(FontUtils.isBold(subsetFont));
             descriptor.setItalic(FontUtils.isItalic(subsetFont));
-
-            LOG.debug(
-                    "Searching the system for a font matching name '{}' and description [name:{}, bold:{}, italic:{}]",
-                    lookupName, descriptor.getFontName(), descriptor.isForceBold(), descriptor.isItalic());
-
+            LOG.debug("Searching the system for a font matching name \'{}\' and description [name:{}, bold:{}, italic:{}]", lookupName, descriptor.getFontName(), descriptor.isForceBold(), descriptor.isItalic());
             FontMapping<TrueTypeFont> fontMapping = FontMappers.instance().getTrueTypeFont(lookupName, descriptor);
             if (fontMapping != null && fontMapping.getFont() != null) {
                 TrueTypeFont mappedFont = fontMapping.getFont();
-
                 try {
                     if (fontMapping.isFallback()) {
                         LOG.debug("Fallback font available on the system: {} (for {})", mappedFont.getName(), fontName);
                     } else {
                         LOG.debug("Original font available on the system: {}", fontName);
                     }
-
                     return PDType0Font.load(document, mappedFont.getOriginalData());
                 } catch (IOException ioe) {
                     LOG.warn("Failed to load font from system", ioe);
@@ -387,80 +375,59 @@ public final class FontUtils {
                     }
                 }
             }
-
             return null;
         }
-
     }
 
     /**
      * Supports writing labels which require multiple fonts (eg: mixing thai and english words) Returns a list of text with associated font.
      */
-    public static List<TextWithFont> resolveFonts(String label, PDFont font, PDDocument document)
-            throws TaskIOException {
+    public static List<TextWithFont> resolveFonts(String label, PDFont font, PDDocument document) throws TaskIOException {
         PDFont currentFont = font;
         StringBuilder currentString = new StringBuilder();
-
-        // we want to keep the insertion order
         List<TextWithFont> result = new ArrayList<>();
-
-        Iterator<Integer> codePointIterator = label.codePoints().iterator();
+        Iterator<Integer> codePointIterator = visualToLogical(label).codePoints().iterator();
         while (codePointIterator.hasNext()) {
             int codePoint = codePointIterator.next();
-
             String s = new String(Character.toChars(codePoint));
-
             PDFont f = fontOrFallback(s, font, document);
             if (s.equals(" ")) {
-                // we want space to be a separate text item
-                // because some fonts are missing the space glyph
-                // so we'll handle it separate from the other chars
-
-                // some fonts don't have glyphs for space.
-                // figure out if that's the case and switch to a standard font as fallback
                 if (!FontUtils.canDisplaySpace(f)) {
                     f = FontUtils.getStandardType1Font(StandardType1Font.HELVETICA);
                 }
-
-                // end current string, before space
                 if (currentString.length() > 0) {
                     result.add(new TextWithFont(currentString.toString(), currentFont));
                 }
-
-                // add space
                 result.add(new TextWithFont(" ", f));
                 currentString = new StringBuilder();
                 currentFont = f;
-            } else if (currentFont == f) {
-                currentString.append(s);
             } else {
-                if (currentString.length() > 0) {
-                    result.add(new TextWithFont(currentString.toString(), currentFont));
+                if (currentFont == f) {
+                    currentString.append(s);
+                } else {
+                    if (currentString.length() > 0) {
+                        result.add(new TextWithFont(currentString.toString(), currentFont));
+                    }
+                    currentString = new StringBuilder(s);
+                    currentFont = f;
                 }
-
-                currentString = new StringBuilder(s);
-                currentFont = f;
             }
         }
-
         for (TextWithFont each : result) {
-            LOG.trace("Will write '{}' with {}", each.getText(), each.getFont());
+            LOG.trace("Will write \'{}\' with {}", each.getText(), each.getFont());
         }
-
         result.add(new TextWithFont(currentString.toString(), currentFont));
-
         return result;
     }
 
     public static String removeUnsupportedCharacters(String text, PDDocument doc) throws TaskIOException {
         List<TextWithFont> resolved = resolveFonts(text, HELVETICA, doc);
         StringBuilder result = new StringBuilder();
-        resolved.forEach(tf -> {
+        resolved.forEach(( tf) -> {
             if (tf.getFont() != null) {
                 result.append(tf.getText());
             }
         });
-
         return result.toString();
     }
 }

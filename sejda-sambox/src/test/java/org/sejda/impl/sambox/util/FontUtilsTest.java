@@ -33,7 +33,6 @@ import static org.junit.Assert.assertTrue;
 import static org.sejda.impl.sambox.util.FontUtils.canDisplay;
 import static org.sejda.impl.sambox.util.FontUtils.fontOrFallback;
 import static org.sejda.impl.sambox.util.FontUtils.getStandardType1Font;
-
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -41,7 +40,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.fontbox.ttf.TrueTypeFont;
 import org.junit.Test;
 import org.sejda.core.support.io.IOUtils;
@@ -81,8 +79,7 @@ public class FontUtilsTest {
         assertEquals(PDType1Font.COURIER_OBLIQUE, getStandardType1Font(StandardType1Font.CURIER_OBLIQUE));
         assertEquals(PDType1Font.HELVETICA, getStandardType1Font(StandardType1Font.HELVETICA));
         assertEquals(PDType1Font.HELVETICA_BOLD, getStandardType1Font(StandardType1Font.HELVETICA_BOLD));
-        assertEquals(PDType1Font.HELVETICA_BOLD_OBLIQUE,
-                getStandardType1Font(StandardType1Font.HELVETICA_BOLD_OBLIQUE));
+        assertEquals(PDType1Font.HELVETICA_BOLD_OBLIQUE, getStandardType1Font(StandardType1Font.HELVETICA_BOLD_OBLIQUE));
         assertEquals(PDType1Font.HELVETICA_OBLIQUE, getStandardType1Font(StandardType1Font.HELVETICA_OBLIQUE));
         assertEquals(PDType1Font.TIMES_BOLD, getStandardType1Font(StandardType1Font.TIMES_BOLD));
         assertEquals(PDType1Font.TIMES_BOLD_ITALIC, getStandardType1Font(StandardType1Font.TIMES_BOLD_ITALIC));
@@ -103,64 +100,58 @@ public class FontUtilsTest {
     @Test
     public void testCanDisplay() {
         assertTrue(canDisplay("Chuck", getStandardType1Font(StandardType1Font.HELVETICA)));
-        assertFalse(canDisplay("कसौटी", getStandardType1Font(StandardType1Font.HELVETICA)));
+        assertFalse(canDisplay("?????", getStandardType1Font(StandardType1Font.HELVETICA)));
         assertFalse(canDisplay("Chuck", null));
     }
 
     @Test
     public void testFindFontFor() {
-        assertNotNull(findFontFor("ทดสอบ")); // thai
-        assertNotNull(findFontFor("αυτό είναι ένα τεστ")); // greek
-        assertNotNull(findFontFor("വീട്")); // malayalam
-        assertNotNull(findFontFor("मानक")); // hindi
-        assertNotNull(findFontFor("జ")); // telugu
-        assertNotNull(findFontFor("উ")); // bengali
-        assertNotNull(findFontFor("עברית")); // hebrew
-        assertNotNull(findFontFor("简化字")); // simplified chinese
-        assertNotNull(findFontFor("한국어/조선말")); // korean
-        assertNotNull(findFontFor("日本語")); // japanese
-        assertNotNull(findFontFor("latin ąćęłńóśźż")); // latin
-        assertNotNull(findFontFor("\uFFFD \u2997")); // symbols
-        assertNotNull(findFontFor("Newlines\nare\r\nignored")); // newlines
-        assertNotNull(findFontFor("\u2984 \u2583 \u2738 ☗⦄✸▃ ")); // symbols
-        assertNotNull(findFontFor("ភាសាខ្មែរ")); // khmer
-        assertNotNull(findFontFor("ጩ")); // ethiopic
-        assertNotNull(findFontFor("پنجابی, ਪੰਜਾਬੀ")); // punjabi
-        assertNotNull(findFontFor("தமிழ்")); // tamil
-        assertNotNull(findFontFor("ગુજરાતી")); // gujarati
-        assertNotNull(findFontFor("န\u103Aမာဘာသာ")); // myanmar
-        assertNotNull(findFontFor("հայերէն")); // armenian
-        assertNotNull(findFontFor("සිංහල")); // sinhalese
-        assertNotNull(findFontFor("ᠮᠣᠩᠭᠣᠯ")); // mongolian
-        assertNotNull(findFontFor("ಕನ್ನಡ")); // kannada
-        assertNotNull(findFontFor("한국어 조선말")); // korean
-        assertNotNull(findFontFor("ଓଡ଼ିଆ ଭାଷା")); // oryia
+        assertNotNull(findFontFor("?????"));
+        assertNotNull(findFontFor("???? ????? ??? ????"));
+        assertNotNull(findFontFor("????"));
+        assertNotNull(findFontFor("????"));
+        assertNotNull(findFontFor("?"));
+        assertNotNull(findFontFor("?"));
+        assertNotNull(findFontFor("?????"));
+        assertNotNull(findFontFor("???"));
+        assertNotNull(findFontFor("???/???"));
+        assertNotNull(findFontFor("???"));
+        assertNotNull(findFontFor("latin ?????????"));
+        assertNotNull(findFontFor("? ?"));
+        assertNotNull(findFontFor("Newlines\nare\r\nignored"));
+        assertNotNull(findFontFor("? ? ? ???? "));
+        assertNotNull(findFontFor("?????????"));
+        assertNotNull(findFontFor("?"));
+        assertNotNull(findFontFor("??????, ??????"));
+        assertNotNull(findFontFor("?????"));
+        assertNotNull(findFontFor("???????"));
+        assertNotNull(findFontFor("????????"));
+        assertNotNull(findFontFor("???????"));
+        assertNotNull(findFontFor("?????"));
+        assertNotNull(findFontFor("??????"));
+        assertNotNull(findFontFor("?????"));
+        assertNotNull(findFontFor("??? ???"));
+        assertNotNull(findFontFor("????? ????"));
     }
 
     @Test
     public void fontForMultipleLanguagesInOneString() {
-        assertNotNull(findFontFor(
-                "န\u103Aမာဘာသာ සිංහල ગુજરાતી தமிழ் پنجابی, ਪੰਜਾਬੀ ਹਰਜੋਤ ਸਿੰਘ ភាសាខ្មែរጩ latin ąćęłńóśźż ทดสอบ വീട मानक हिन्दी ് జ উ ភាសាខ្មែរ  עברית")); // all in one
+        assertNotNull(findFontFor("???????? ????? ??????? ????? ??????, ?????? ????? ???? ?????????? latin ????????? ????? ??? ???? ?????? ? ? ? ?????????  ?????"));
     }
 
     @Test
     public void roundTripWriteAndRead() throws TaskException, IOException {
-        List<String> strings = Arrays.asList("ଓଡ଼ିଆଭାଷା", "한국어", "ગુજરાતી ਪੰਜਾਬੀ தமிழ்", "සිංහල", "န\u103Aမာဘာသာ",
-                "ਹਰਜੋਤ ਸਿੰਘ ភាសាខ្មែរ latin ąćęłńóśźż ทดสอบ വീട मानक हिन्दी ് జ উ ☗⦄✸▃ ");
-
+        List<String> strings = Arrays.asList("?????????", "???", "??????? ?????? ?????", "?????", "????????", "??? ?? ?? ???? ??? ??????", "123 ?????? ????", "032 ??? ?????? ??????", "This is ????  Mixed ?????? ????", "????? ???? ????????? latin ????????? ????? ??? ???? ?????? ? ? ? ???? ", "??? ?????? ??????");
         for (String str : strings) {
             PDDocument doc = new PDDocument();
             PDPage page = new PDPage();
-            new PageTextWriter(doc).write(page, new Point(10, 10), str,
-                    getStandardType1Font(StandardType1Font.HELVETICA), 10.0d, Color.BLACK);
+            new PageTextWriter(doc).write(page, new Point(10, 10), str, getStandardType1Font(StandardType1Font.HELVETICA), 10.0d, Color.BLACK);
             doc.addPage(page);
             PDDocumentHandler handler = new PDDocumentHandler(doc);
             File tmp = IOUtils.createTemporaryBuffer();
             handler.savePDDocument(tmp);
-
             PDDocument doc2 = PDFParser.parse(SeekableSources.seekableSourceFrom(tmp));
-            String text = new PdfTextExtractorByArea().extractTextFromArea(doc2.getPage(0),
-                    new Rectangle(0, 0, 1000, 1000));
+            String text = new PdfTextExtractorByArea().extractTextFromArea(doc2.getPage(0), new Rectangle(0, 0, 1000, 1000));
             assertEquals(noWhitespace(str), noWhitespace(text));
         }
     }
@@ -176,44 +167,40 @@ public class FontUtilsTest {
 
     @Test
     public void testFontOrFallbackNegative() {
-        assertNotNull(fontOrFallback("कसौटी", HELVETICA, new PDDocument()));
+        assertNotNull(fontOrFallback("?????", HELVETICA, new PDDocument()));
     }
 
     @Test
     public void testFontOrFallbackNotFoundFallback() {
-        assertNull(fontOrFallback("\u1B2A\u1B35\u1B31\u1B29\u1B2E\u1B36, \u1B29\u1B32\u1B29\u1B2E\u1B36", HELVETICA,
-                new PDDocument()));
+        assertNull(fontOrFallback("??????, ?????", HELVETICA, new PDDocument()));
     }
 
     @Test
     public void testCaching() {
         PDDocument doc = new PDDocument();
-        PDFont expected = FontUtils.findFontFor(doc, "ทดสอบ");
+        PDFont expected = FontUtils.findFontFor(doc, "?????");
         assertNotNull(expected);
-
-        PDFont actual = FontUtils.findFontFor(doc, "ทด");
+        PDFont actual = FontUtils.findFontFor(doc, "??");
         assertTrue("Font is cached, same instance is returned", expected == actual);
     }
 
     @Test
     public void testCanDisplayThai() {
-        assertThat(findFontFor("นี่คือการทดสอบ"), is(notNullValue()));
+        assertThat(findFontFor("??????????????"), is(notNullValue()));
     }
 
     @Test
     public void canDisplayGeorgian() {
-        assertNotNull(findFontFor("ქართული ენა"));
+        assertNotNull(findFontFor("??????? ???"));
     }
 
     @Test
     public void testCanDisplayType0FontsThatDontThrow() throws TaskIOException, IOException {
         PDDocument doc = getTestDoc("pdf/2-up-sample.pdf");
-
         PDResources res = doc.getPage(0).getResources();
         PDFormXObject form = (PDFormXObject) res.getXObject(COSName.getPDFName("Form2"));
         PDResources formRes = form.getResources();
         PDFont font = formRes.getFont(COSName.getPDFName("F0"));
-
         assertThat(font.getName(), is("Arial-BoldMT"));
         assertThat(FontUtils.canDisplay("Redacted out :)", font), is(false));
     }
@@ -224,24 +211,18 @@ public class FontUtilsTest {
         if (!isVerdanaAvailable) {
             return;
         }
-
         PDDocument doc = getTestDoc("pdf/subset-font.pdf");
-
         PDResources res = doc.getPage(0).getResources();
         PDFormXObject form = (PDFormXObject) res.getXObject(COSName.getPDFName("Xf1"));
         PDResources formRes = form.getResources();
         PDFont font = formRes.getFont(COSName.getPDFName("F1"));
         assertThat(font.getName(), is("PXAAAA+Verdana"));
-
         PDFont original = new FontUtils.FontSubsetting(font).loadOriginal(doc);
-        // relies on Verdana font being present on the system
         assertThat(original.getName(), is("Verdana"));
     }
 
     private PDDocument getTestDoc(String name) throws TaskIOException {
-        PdfStreamSource source = PdfStreamSource.newInstanceNoPassword(
-                getClass().getClassLoader().getResourceAsStream(name), randomAlphanumeric(16) + ".pdf");
-
+        PdfStreamSource source = PdfStreamSource.newInstanceNoPassword(getClass().getClassLoader().getResourceAsStream(name), randomAlphanumeric(16) + ".pdf");
         return new DefaultPdfSourceOpener().open(source).getUnderlyingPDDocument();
     }
 
@@ -253,32 +234,25 @@ public class FontUtilsTest {
     @Test
     public void resolveFontsWhenTextRepeats() throws TaskIOException {
         PDDocument doc = new PDDocument();
-        List<TextWithFont> textAndFonts = FontUtils.resolveFonts("123α456α789", HELVETICA, doc);
-
+        List<TextWithFont> textAndFonts = FontUtils.resolveFonts("123?456?789", HELVETICA, doc);
         assertThat(textAndFonts.get(0).getFont().getName(), is("Helvetica"));
         assertThat(textAndFonts.get(0).getText(), is("123"));
-
         assertThat(textAndFonts.get(1).getFont().getName(), is(not("Helvetica")));
-        assertThat(textAndFonts.get(1).getText(), is("α"));
-
+        assertThat(textAndFonts.get(1).getText(), is("?"));
         assertThat(textAndFonts.get(2).getFont().getName(), is("Helvetica"));
         assertThat(textAndFonts.get(2).getText(), is("456"));
-
         assertThat(textAndFonts.get(3).getFont().getName(), is(not("Helvetica")));
-        assertThat(textAndFonts.get(3).getText(), is("α"));
+        assertThat(textAndFonts.get(3).getText(), is("?"));
     }
 
     @Test
     public void resolveFontsWhenSpaceSeparately() throws TaskIOException {
         PDDocument doc = new PDDocument();
         List<TextWithFont> textAndFonts = FontUtils.resolveFonts("ab cd", HELVETICA, doc);
-
         assertThat(textAndFonts.get(0).getFont().getName(), is("Helvetica"));
         assertThat(textAndFonts.get(0).getText(), is("ab"));
-
         assertThat(textAndFonts.get(1).getFont().getName(), is("Helvetica"));
         assertThat(textAndFonts.get(1).getText(), is(" "));
-
         assertThat(textAndFonts.get(2).getFont().getName(), is("Helvetica"));
         assertThat(textAndFonts.get(2).getText(), is("cd"));
     }
@@ -286,11 +260,9 @@ public class FontUtilsTest {
     @Test
     public void resolveFontsWhenUnsupportedCharacters() throws TaskIOException {
         PDDocument doc = new PDDocument();
-        List<TextWithFont> textAndFonts = FontUtils.resolveFonts("ab\uFE0Fcd", HELVETICA, doc);
-
+        List<TextWithFont> textAndFonts = FontUtils.resolveFonts("ab?cd", HELVETICA, doc);
         assertThat(textAndFonts.get(1).getFont(), is(nullValue()));
-        assertThat(textAndFonts.get(1).getText(), is("\uFE0F"));
-
-        assertThat(FontUtils.removeUnsupportedCharacters("ab \uFE0Fcd", doc), is("ab cd"));
+        assertThat(textAndFonts.get(1).getText(), is("?"));
+        assertThat(FontUtils.removeUnsupportedCharacters("ab ?cd", doc), is("ab cd"));
     }
 }
